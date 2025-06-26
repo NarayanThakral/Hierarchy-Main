@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hierarchy Viewer</title>
+    <style>
+        :root {
+            --primary-blue: #0d2344;
+            --accent-cyan: #00bcf2;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e9ecef;
+            --dark-gray: #495057;
+            --text-color: #212529;
+            --white: #ffffff;
+            --border-radius: 6px;
+            --highlight-bg: #e0f7ff;
+            --added-bg: #d4edda;
+            --removed-bg: #f8d7da;
+            --added-border: #28a745;
+            --removed-border: #dc3545;
+            --success-bg: #d4edda;
+            --success-border: #28a745;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: var(--white);
+            padding: 2rem 2.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            color: var(--primary-blue);
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background-color: var(--accent-cyan);
+            color: var(--white);
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        .tab-button:hover {
+            background-color: #00a8d9;
+        }
+
+        .tab-button:active {
+            transform: translateY(1px);
+        }
+
+        .tab-button.active {
+            background-color: var(--primary-blue);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(0, 188, 242, 0.2);
+        }
+
+        .company-block {
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .company-header {
+            background-color: var(--light-gray);
+            padding: 0.75rem 1rem;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .company-header:hover {
+            background-color: #e9ecef;
+        }
+
+        .company-content {
+            padding: 1rem;
+            display: none;
+        }
+
+        .company-content.active {
+            display: block;
+        }
+
+        .hierarchy-card {
+            background-color: var(--white);
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .hierarchy-card-content {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .view-button, .edit-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--medium-gray);
+            background-color: var(--white);
+            color: var(--primary-blue);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .view-button:hover, .edit-button:hover {
+            background-color: var(--medium-gray);
+        }
+
+        .chevron {
+            transition: transform 0.3s;
+        }
+
+        .chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        .error-message {
+            color: #D32F2F;
+            background-color: #FFEBEE;
+            border: 1px solid #D32F2F;
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .error-message .dismiss-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #D32F2F;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .error-message .dismiss-btn:hover {
+            color: #b71c1c;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 10px;
+            max-width: 800px;
+            width: 95vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem 2.5rem 1.5rem 2.5rem;
+            position: relative;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+        }
+        .modal-close {
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #888;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .modal-close:hover { color: #d32f2f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hierarchy Viewer</h1>
+        <div class="tabs">
+            <button class="tab-button active" id="approvedTab" onclick="switchTab('approved')">Approved</button>
+            <button class="tab-button" id="draftTab" onclick="switchTab('draft')">In Draft</button>
+        </div>
+        <input type="text" class="search-input" placeholder="Search by company or location..." oninput="filterData()">
+        <div id="message-container"></div>
+        <div id="hierarchies-list"></div>
+    </div>
+
+    <div id="hierarchy-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <div id="modal-loader" class="loader" style="display:none;">Loading...</div>
+            <div id="modal-error" class="error-message" style="display:none;"></div>
+            <div id="modal-hierarchy"></div>
+        </div>
+    </div>
+
+    <script>
+        let groupedData = [];
+        let searchTerm = '';
+        let currentTab = 'approved';
+
+        async function fetchHierarchies() {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.innerHTML = '';
+            try {
+                const res = await fetch('http://localhost:3000/api/hierarchies/grouped');
+                if (!res.ok) throw new Error('Failed to fetch hierarchies');
+                groupedData = await res.json();
+                renderHierarchies();
+            } catch (error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.innerHTML = `<strong>Error:</strong> ${error.message}<button class="dismiss-btn" onclick="this.parentElement.remove()">✕</button>`;
+                messageContainer.appendChild(errorDiv);
+            }
+        }
+        fetchHierarchies();
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('approvedTab').classList.toggle('active', tab === 'approved');
+            document.getElementById('draftTab').classList.toggle('active', tab === 'draft');
+            renderHierarchies();
+        }
+
+        function filterData() {
+            searchTerm = document.querySelector('.search-input').value.toLowerCase();
+            renderHierarchies();
+        }
+
+        function renderHierarchies() {
+            const listDiv = document.getElementById('hierarchies-list');
+            listDiv.innerHTML = '';
+            let filtered = groupedData.filter(group =>
+                (group.company && group.company.toLowerCase().includes(searchTerm)) ||
+                (group.location && group.location.toLowerCase().includes(searchTerm))
+            );
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<p class="text-gray-500">No hierarchies found.</p>';
+                return;
+            }
+            filtered.forEach((group, idx) => {
+                // Group versions by root_hierarchy_id (or id if null)
+                const chains = {};
+                group.versions.forEach(v => {
+                    const chainId = v.root_hierarchy_id || v.id;
+                    if (!chains[chainId]) chains[chainId] = [];
+                    chains[chainId].push(v);
+                });
+                // For each chain, find the latest version for the current tab
+                Object.values(chains).forEach((chain, chainIdx) => {
+                    // Sort by version_number descending
+                    chain.sort((a, b) => b.version_number - a.version_number);
+                    let mainVersion = null;
+                    let previousVersions = [];
+                    if (currentTab === 'approved') {
+                        mainVersion = chain.find(v => v.status === 'approved');
+                        if (mainVersion) {
+                            previousVersions = chain.filter(v => v.status === 'archived' && v.version_number < mainVersion.version_number);
+                        }
+                    } else {
+                        // Only show the latest in-draft version as the main card
+                        const inDraftVersions = chain.filter(v => v.status === 'in-draft');
+                        if (inDraftVersions.length > 0) {
+                            // Always pick the one with the highest version_number
+                            mainVersion = inDraftVersions[0];
+                            previousVersions = chain.filter(v => v.version_number < mainVersion.version_number);
+                        }
+                    }
+                    if (!mainVersion) return;
+                    const block = document.createElement('div');
+                    block.className = 'company-block';
+                    block.innerHTML = `
+                        <button class="company-header" onclick="toggleContent(this, '${idx}-${chainIdx}')">
+                            <span><strong>${group.company || 'Unknown Company'}</strong> <span style="color: #888; font-weight:400;">(${group.location || 'Unknown Location'})</span></strong><br><span style="color: #555; font-size:0.98em;">Project: <strong>${group.projectName || 'N/A'}</strong></span></span>
+                            <span class="chevron"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+                        </button>
+                        <div class="company-content" id="content-${idx}-${chainIdx}">
+                            <div class="hierarchy-card">
+                                <div class="hierarchy-card-content">
+                                    <p class="font-semibold text-lg">Version: ${mainVersion.version || 'N/A'} <span style="font-size:0.9em; color:${mainVersion.status==='approved'?'#28a745':mainVersion.status==='in-draft'?'#00bcf2':'#888'};">[${mainVersion.status}]</span></p>
+                                    <p class="text-sm text-gray-500">Last Updated: ${mainVersion.updated_at ? new Date(mainVersion.updated_at).toLocaleString() : '-'}</p>
+                                    <p class="text-sm text-gray-500">Created: ${mainVersion.created_at ? new Date(mainVersion.created_at).toLocaleString() : '-'}</p>
+                                    <div class="action-buttons">
+                                        <button class="view-button" onclick="viewHierarchy(${mainVersion.id}, '${mainVersion.status}')">View</button>
+                                    </div>
+                                </div>
+                            </div>
+                            ${previousVersions.length > 0 ? `
+                            <details>
+                                <summary style="cursor:pointer; color:var(--primary-blue); font-weight:500;">Show Previous Versions (${previousVersions.length})</summary>
+                                ${previousVersions.map(version => `
+                                    <div class="hierarchy-card" style="margin-left:1rem;">
+                                        <div class="hierarchy-card-content">
+                                            <p class="font-semibold text-lg">Version: ${version.version || 'N/A'} <span style="font-size:0.9em; color:${version.status==='approved'?'#28a745':version.status==='in-draft'?'#00bcf2':'#888'};">[${version.status}]</span></p>
+                                            <p class="text-sm text-gray-500">Last Updated: ${version.updated_at ? new Date(version.updated_at).toLocaleString() : '-'}</p>
+                                            <p class="text-sm text-gray-500">Created: ${version.created_at ? new Date(version.created_at).toLocaleString() : '-'}</p>
+                                            <div class="action-buttons">
+                                                <button class="view-button" onclick="viewHierarchy(${version.id}, '${version.status}')">View</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </details>
+                            ` : ''}
+                        </div>
+                    `;
+                    listDiv.appendChild(block);
+                });
+            });
+        }
+
+        function toggleContent(button, index) {
+            const content = document.getElementById(`content-${index}`);
+            const chevron = button.querySelector('.chevron');
+            if (content.classList.contains('active')) {
+                content.classList.remove('active');
+                chevron.classList.remove('rotated');
+            } else {
+                content.classList.add('active');
+                chevron.classList.add('rotated');
+            }
+        }
+
+        function viewHierarchy(id, status) {
+            window.location.href = `hierarchy_testing.html?hierarchyId=${id}&status=${status}`;
+        }
+
+        function closeModal() {
+            document.getElementById('hierarchy-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
